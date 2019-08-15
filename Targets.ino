@@ -33,6 +33,44 @@ Relay relayModule2_2(RELAYMODULE2_2_PIN_SIGNAL);
 const int timeout = 10000;       //define timeout of 10 sec
 long time0;
 
+/* Original requirements description:
+ *  Build a pair of nerf quickdraw targets.
+ *  I want to be able to press a button and then have the Arduino wait a random 2- 5 seconds
+ *  then turn a 12v LED on each target on using a relay. The lit LED means that each player
+ *  may draw their blaster and shoot the target. once this happens I want to have a piezo
+ *  sensor on each target to sense how fast each person was and then have the faster person’s
+ *  target turn solid while the other person’s turns off. And to make it a little more
+ *  competitive I would also like to add an LCD to display the time of each player.
+*/
+
+/* Requirements translatted to pseudo-code
+ *  When the button is pressed
+ *    Reset target "hit" statuses
+ *    Turn off both relays/LEDs (flash them a few times before turning off?)
+ *    Show "Get Ready!" on the LCD
+ *    Set a timer for between 2~5 seconds from now (random value)
+ *  When the timer event occurs
+ *    Turn on both relays/LEDs
+ *    Mark the current time (to be used later to measure reaction time)
+ *  When a target is hit
+ *    Check whether the timer has been reached
+ *    If not
+ *      show false start for player 1|2 on the LCD
+ *      turn off the relay/LED for this target
+ *    otherwise
+ *      turn off the relay/LED of the other target (this one stays on to indicate the winner)
+ *      show time difference from turning on until being hit
+ *
+ * Suggested LCD output:
+ *  when player 2 hit the target before it's enabled:
+ * PLAYER 1    0.2s
+ * PLAYER 2   CHEAT
+ *  when player 2 beats player 1
+ * PLAYER 1    1.2s
+ * PLAYER 2****0.8s
+ * 1234567890123456
+*/
+
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
 void setup() 
 {
