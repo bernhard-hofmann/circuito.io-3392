@@ -12,26 +12,24 @@
 #define RELAYMODULE2_2_PIN_SIGNAL	4
 
 // Global variables and defines
+
 // There are several different versions of the LCD I2C adapter, each might have a different address.
 // Try the given addresses by Un/commenting the following rows until LCD works follow the serial monitor prints. 
 // To find your LCD address go to: http://playground.arduino.cc/Main/I2cScanner and run example.
 #define LCD_ADDRESS 0x3F
 //#define LCD_ADDRESS 0x27
+
 // Define LCD characteristics
 #define LCD_ROWS 2
 #define LCD_COLUMNS 16
 #define SCROLL_DELAY 150
 #define BACKLIGHT 255
+
 // object initialization
 LiquidCrystal_PCF8574 lcdI2C;
 Button ArcadeButton(ARCADEBUTTON_PIN_NO);
 Relay relayModule1_1(RELAYMODULE1_1_PIN_SIGNAL);
 Relay relayModule2_2(RELAYMODULE2_2_PIN_SIGNAL);
-
-
-// define vars for testing menu
-const int timeout = 10000;       //define timeout of 10 sec
-long time0;
 
 /* Original requirements description:
  *  Build a pair of nerf quickdraw targets.
