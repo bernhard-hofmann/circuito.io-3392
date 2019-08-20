@@ -72,6 +72,7 @@ Relay relayModule2_2(RELAYMODULE2_2_PIN_SIGNAL);
 bool isTarget1Hit;
 bool isTarget2Hit;
 unsigned long startTime;
+bool targetsActive;
 
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
 void setup()
@@ -127,10 +128,12 @@ void loop()
     // Set a timer for between 2~5 seconds from now (random value)
     startTime = millis(); // Returns the number of milliseconds passed since the Arduino board began running the current program. This number will overflow (go back to zero), after approximately 50 days.
     startTime += random(2000, 5000);
+    targetsActive = false;
   }
 
   // Temporary test code - turn on the relays when the start time is reached
   if (millis() >= startTime) {
+    targetsActive = true;
     startTime = 0;
     relayModule1_1.on();
     relayModule2_2.on();
