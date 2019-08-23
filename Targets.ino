@@ -127,14 +127,16 @@ void loop()
 
     // Set a timer for between 2~5 seconds from now (random value)
     startTime = millis(); // Returns the number of milliseconds passed since the Arduino board began running the current program. This number will overflow (go back to zero), after approximately 50 days.
+    Serial.print("Button pressed at: "); Serial.println(String(startTime));
     startTime += random(2000, 5000);
+    Serial.print("Random StartTime : "); Serial.println(String(startTime));
     targetsActive = false;
   }
 
   // Temporary test code - turn on the relays when the start time is reached
   if (millis() >= startTime) {
     targetsActive = true;
-    startTime = 0;
+    startTime = 4294967295UL;
     relayModule1_1.on();
     relayModule2_2.on();
 
