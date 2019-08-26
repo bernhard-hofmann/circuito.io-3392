@@ -1,15 +1,16 @@
 // Include Libraries
+#include <Wire.h>
 #include "Arduino.h"
 #include "LiquidCrystal_PCF8574.h"
 #include "Button.h"
 #include "Relay.h"
 
 // Pin Definitions
-#define PIEZOVIBRATION1_1_PIN_NEG	A3
-#define PIEZOVIBRATION2_2_PIN_NEG	A1
-#define ARCADEBUTTON_PIN_NO	2
-#define RELAYMODULE1_1_PIN_SIGNAL	3
-#define RELAYMODULE2_2_PIN_SIGNAL	4
+#define PIEZOVIBRATION1_PIN_NEG A3
+#define PIEZOVIBRATION2_PIN_NEG A1
+#define ARCADEBUTTON_PIN_NO       2
+#define RELAYMODULE1_1_PIN_SIGNAL 3
+#define RELAYMODULE2_2_PIN_SIGNAL 4
 
 // Global variables and defines
 
@@ -32,47 +33,64 @@ Relay relayModule1_1(RELAYMODULE1_1_PIN_SIGNAL);
 Relay relayModule2_2(RELAYMODULE2_2_PIN_SIGNAL);
 
 /* Original requirements description:
-    Build a pair of nerf quickdraw targets.
-    I want to be able to press a button and then have the Arduino wait a random 2- 5 seconds
-    then turn a 12v LED on each target on using a relay. The lit LED means that each player
-    may draw their blaster and shoot the target. once this happens I want to have a piezo
-    sensor on each target to sense how fast each person was and then have the faster person’s
-    target turn solid while the other person’s turns off. And to make it a little more
-    competitive I would also like to add an LCD to display the time of each player.
-*/
+ Build a pair of nerf quickdraw targets.
+ I want to be able to press a button and then have the Arduino wait a random 2- 5 seconds
+ then turn a 12v LED on each target on using a relay. The lit LED means that each player
+ may draw their blaster and shoot the target. once this happens I want to have a piezo
+ sensor on each target to sense how fast each person was and then have the faster person’s
+ target turn solid while the other person’s turns off. And to make it a little more
+ competitive I would also like to add an LCD to display the time of each player.
+ */
 
-/* Requirements translatted to pseudo-code
-    When the button is pressed
-      Reset target "hit" statuses
-      Turn off both relays/LEDs (flash them a few times before turning off?)
-      Show "Get Ready!" on the LCD
-      Set a timer for between 2~5 seconds from now (random value)
-    When the timer event occurs
-      Turn on both relays/LEDs
-      Mark the current time (to be used later to measure reaction time)
-    When a target is hit
-      Check whether the timer has been reached
-      If not
-        show false start for player 1|2 on the LCD
-        turn off the relay/LED for this target
-      otherwise
-        turn off the relay/LED of the other target (this one stays on to indicate the winner)
-        show time difference from turning on until being hit
-
-   Suggested LCD output:
-    when player 2 hit the target before it's enabled:
-   PLAYER 1    0.2s
-   PLAYER 2   CHEAT
-    when player 2 beats player 1
-   PLAYER 1    1.2s
-   PLAYER 2****0.8s
-   1234567890123456
-*/
+/* Requirements translated to pseudo-code
+ When the button is pressed
+ Reset target "hit" statuses
+ Turn off both relays/LEDs (flash them a few times before turning off?)
+ Show "Get Ready!" on the LCD
+ Set a timer for between 2~5 seconds from now (random value)
+ When the timer event occurs
+ Turn on both relays/LEDs
+ Mark the current time (to be used later to measure reaction time)
+ When a target is hit
+ Check whether the timer has been reached
+ If not
+ show false start for player 1|2 on the LCD
+ turn off the relay/LED for this target
+ otherwise
+ turn off the relay/LED of the other target (this one stays on to indicate the winner)
+ show time difference from turning on until being hit
+ 
+ Suggested LCD output:
+ when player 2 hit the target before it's enabled:
+ PLAYER 1    0.2s
+ PLAYER 2   CHEAT
+ when player 2 beats player 1
+ PLAYER 1    1.2s
+ PLAYER 2****0.8s
+ 1234567890123456
+ */
 
 bool isTarget1Hit;
 bool isTarget2Hit;
 unsigned long startTime;
+unsigned long delayTime;
 bool targetsActive;
+bool gameOver = false;
+
+// The values for the targets will be read using analogRead to get a value from 0 through 1023.
+int target1Value = 0;
+int target2Value = 0;
+
+// Target values can be from 0 through 1023. To avoid false "hit" detection, modify the threshold that the value must exceed to be recognised as a hit.
+// These are likely to be the same, but the reality is that one target might be more sensitive than another so we use two values for flexibility.
+int target1Threshold = 512;
+int target2Threshold = 512;
+
+unsigned long player1HitTime;
+unsigned long player2HitTime;
+
+bool player1FalseStart = false;
+bool player2FalseStart = false;
 
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
 void setup()
@@ -92,7 +110,7 @@ void setup()
   lcdI2C.clear();                          // Clear LCD screen.
   lcdI2C.print("Ready");                   // Print print String to LCD on first line
   lcdI2C.selectLine(2);                    // Set cursor at the begining of line 2
-  lcdI2C.print("");                        // Print print String to LCD on second line
+  lcdI2C.print("Press the button");        // Print print String to LCD on second line
 
   // if analog input pin 0 is unconnected, random analog
   // noise will cause the call to randomSeed() to generate
@@ -121,29 +139,85 @@ void loop()
     relayModule1_1.off();
     relayModule2_2.off();
 
+    player1HitTime = 0;
+    player2HitTime = 0;
+
     // Show "Get Ready!" on the LCD
     lcdI2C.clear();
     lcdI2C.print("Get Ready!");
 
     // Set a timer for between 2~5 seconds from now (random value)
     startTime = millis(); // Returns the number of milliseconds passed since the Arduino board began running the current program. This number will overflow (go back to zero), after approximately 50 days.
-    Serial.print("Button pressed at: "); Serial.println(String(startTime));
+    Serial.print("Button pressed at: "); 
+    Serial.println(String(startTime));
     startTime += random(2000, 5000);
-    Serial.print("Random StartTime : "); Serial.println(String(startTime));
+    Serial.print("Random StartTime : "); 
+    Serial.println(String(startTime));
     targetsActive = false;
+    gameOver = false;
   }
 
-  // Temporary test code - turn on the relays when the start time is reached
-  if (millis() >= startTime) {
+  // Temporary test code - turn on the relays when the start time is reached and the targets are not already active
+  if (!targetsActive && millis() >= startTime) {
     targetsActive = true;
-    startTime = 4294967295UL;
     relayModule1_1.on();
     relayModule2_2.on();
+  }
+
+  // I don't have a Piezo Vibration Sensor but the documentation says that it is suitable for measurements of flexibility, vibration, impact and touch.
+  // When the sensor moves back and forth, a certain voltage will be created by the voltage comparator inside of it. 
+  // Returned values: from 0 (no strain) to 1023 (maximal strain).
+  target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
+  if (target1Value > target1Threshold) {
+    player1HitTime = millis();
+    if (targetsActive) {
+      player1FalseStart = false;
+    } 
+    else {
+      player1FalseStart = true;
+    }
+  }
+
+  // The exact same code for target 2
+  target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
+  if (target2Value > target2Threshold) {
+    player2HitTime = millis();
+    if (targetsActive) {
+      player2FalseStart = false;
+    } 
+    else {
+      player2FalseStart = true;
+    }
+  }
+
+  // Update the display if a target has been hit
+  if (!gameOver && (player1HitTime > 0 || player2HitTime > 0)) {
+    if (player1HitTime > 0 && player2HitTime > 0) {
+      gameOver = true;
+    }
 
     lcdI2C.clear();
-    lcdI2C.print("** FIRE **");
+    lcdI2C.print("PLAYER 1 ");
+    if (player1FalseStart) {
+      lcdI2C.print("-------");
+    } 
+    else {
+      delayTime = player1HitTime - startTime;
+      lcdI2C.print(delayTime);
+    }
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("PLAYER 2 ");
+    if (player2FalseStart) {
+      lcdI2C.print("-------");
+    } 
+    else {
+      delayTime = player2HitTime - startTime;
+      lcdI2C.print(delayTime);
+    }
   }
 
   // A short delay prevents erroneous button press readings and saves a little processing power
   delay(50);
 }
+
