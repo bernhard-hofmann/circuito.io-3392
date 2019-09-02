@@ -84,11 +84,7 @@ int target2Value = 0;
 // Target values can be from 0 through 1023. To avoid false "hit" detection, modify the threshold that the value must exceed to be recognised as a hit.
 // These are likely to be the same, but the reality is that one target might be more sensitive than another so we use two values for flexibility.
 int target1Threshold = 512;
-<<<<<<< HEAD
 int target2Threshold = 512;
-=======
-int target1Threshold = 512;
->>>>>>> 35c92f4c403ea2bdcdf7eef00a96b3c67045aafc
 
 unsigned long player1HitTime;
 unsigned long player2HitTime;
