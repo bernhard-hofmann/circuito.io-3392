@@ -9,8 +9,8 @@
 #define PIEZOVIBRATION1_PIN_NEG A3
 #define PIEZOVIBRATION2_PIN_NEG A1
 #define ARCADEBUTTON_PIN_NO       2
-#define RELAYMODULE1_1_PIN_SIGNAL 3
-#define RELAYMODULE2_2_PIN_SIGNAL 4
+#define relayModule1_PIN_SIGNAL 3
+#define relayModule2_PIN_SIGNAL 4
 
 // Global variables and defines
 
@@ -29,8 +29,8 @@
 // object initialization
 LiquidCrystal_PCF8574 lcdI2C;
 Button ArcadeButton(ARCADEBUTTON_PIN_NO);
-Relay relayModule1_1(RELAYMODULE1_1_PIN_SIGNAL);
-Relay relayModule2_2(RELAYMODULE2_2_PIN_SIGNAL);
+Relay relayModule1(relayModule1_PIN_SIGNAL);
+Relay relayModule2(relayModule2_PIN_SIGNAL);
 
 /* Original requirements description:
  Build a pair of nerf quickdraw targets.
@@ -136,8 +136,8 @@ void loop()
     isTarget2Hit = false;
 
     // Turn off both relays/LEDs (flash them a few times before turning off?)
-    relayModule1_1.off();
-    relayModule2_2.off();
+    relayModule1.off();
+    relayModule2.off();
 
     player1HitTime = 0;
     player2HitTime = 0;
@@ -160,8 +160,8 @@ void loop()
   // Temporary test code - turn on the relays when the start time is reached and the targets are not already active
   if (!targetsActive && millis() >= startTime) {
     targetsActive = true;
-    relayModule1_1.on();
-    relayModule2_2.on();
+    relayModule1.on();
+    relayModule2.on();
   }
 
   // I don't have a Piezo Vibration Sensor but the documentation says that it is suitable for measurements of flexibility, vibration, impact and touch.
@@ -214,6 +214,31 @@ void loop()
     else {
       delayTime = player2HitTime - startTime;
       lcdI2C.print(delayTime);
+    }
+  }
+
+  // Turn off the losing LED and blink the other - assumes setting a relay to the state it's already in has no effect
+  if (gameOver) {
+    // We're going to ignore draws because of the extremely low chance both targets are hit at the same millisecond
+    if (player1HitTime > player2HitTime) {
+      relayModule1.off();
+      // Blink the other relay simply by turning it off/on based on the current time
+      if ((millis()/500) % 2 < 1) {
+        relayModule2.off();
+      }
+      else {
+        relayModule2.on();
+      }
+    }
+    else {
+      relayModule2.off();
+      // Blink the other relay simply by turning it off/on based on the current time
+      if ((millis()/500) % 2 < 1) {
+        relayModule1.off();
+      }
+      else {
+        relayModule1.on();
+      }
     }
   }
 
