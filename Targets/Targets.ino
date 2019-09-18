@@ -203,7 +203,11 @@ void loop()
     } 
     else {
       delayTime = player1HitTime - startTime;
-      lcdI2C.print(delayTime);
+      int s = delayTime/1000;
+      int ms = delayTime - s*1000;
+      char buf[21];
+      sprintf(buf,"%02d.%03d",s, ms);
+      lcdI2C.print(buf);
     }
 
     lcdI2C.selectLine(2);
@@ -213,7 +217,11 @@ void loop()
     } 
     else {
       delayTime = player2HitTime - startTime;
-      lcdI2C.print(delayTime);
+      int s = delayTime/1000;
+      int ms = delayTime - s*1000;
+      char buf[21];
+      sprintf(buf,"%02d.%03d",s, ms);
+      lcdI2C.print(buf);
     }
   }
 
