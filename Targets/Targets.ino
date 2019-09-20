@@ -199,29 +199,39 @@ void loop()
     lcdI2C.clear();
     lcdI2C.print("PLAYER 1 ");
     if (player1FalseStart) {
-      lcdI2C.print("-------");
+      lcdI2C.print("    !!!");
     } 
     else {
-      delayTime = player1HitTime - startTime;
-      int s = delayTime/1000;
-      int ms = delayTime - s*1000;
-      char buf[21];
-      sprintf(buf,"%02d.%03d",s, ms);
-      lcdI2C.print(buf);
+      if (player1HitTime == 0) {
+        lcdI2C.print("    ...");
+      }
+      else {
+        delayTime = player1HitTime - startTime;
+        int s = delayTime/1000;
+        int ms = delayTime - s*1000;
+        char buf[21];
+        sprintf(buf,"%02d.%03d",s, ms);
+        lcdI2C.print(buf);
+      }
     }
 
     lcdI2C.selectLine(2);
     lcdI2C.print("PLAYER 2 ");
     if (player2FalseStart) {
-      lcdI2C.print("-------");
+      lcdI2C.print("    !!!");
     } 
     else {
-      delayTime = player2HitTime - startTime;
-      int s = delayTime/1000;
-      int ms = delayTime - s*1000;
-      char buf[21];
-      sprintf(buf,"%02d.%03d",s, ms);
-      lcdI2C.print(buf);
+      if (player2HitTime == 0) {
+        lcdI2C.print("    ...");
+      }
+      else {
+        delayTime = player2HitTime - startTime;
+        int s = delayTime/1000;
+        int ms = delayTime - s*1000;
+        char buf[21];
+        sprintf(buf,"%02d.%03d",s, ms);
+        lcdI2C.print(buf);
+      }
     }
   }
 
