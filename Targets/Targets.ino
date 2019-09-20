@@ -237,25 +237,33 @@ void loop()
 
   // Turn off the losing LED and blink the other - assumes setting a relay to the state it's already in has no effect
   if (gameOver) {
-    // We're going to ignore draws because of the extremely low chance both targets are hit at the same millisecond
-    if (player1HitTime > player2HitTime) {
+    if (player1FalseStart && player2FalseStart) {
+      // No winner, both LEDs off
       relayModule1.off();
-      // Blink the other relay simply by turning it off/on based on the current time
-      if ((millis()/500) % 2 < 1) {
-        relayModule2.off();
-      }
-      else {
-        relayModule2.on();
-      }
+      relayModule2.off();
     }
     else {
-      relayModule2.off();
-      // Blink the other relay simply by turning it off/on based on the current time
-      if ((millis()/500) % 2 < 1) {
+      // We're going to ignore draws because of the extremely low chance both targets are hit at the same millisecond
+      if (player1FalseStart || player1HitTime > player2HitTime) {
         relayModule1.off();
+        // Blink the other relay simply by turning it off/on based on the current time
+        if ((millis()/500) % 2 < 1) {
+          relayModule2.off();
+        }
+        else {
+          relayModule2.on();
+        }
       }
-      else {
-        relayModule1.on();
+
+      if (player2FalseStart || player2HitTime > player1HitTime) {
+        relayModule2.off();
+        // Blink the other relay simply by turning it off/on based on the current time
+        if ((millis()/500) % 2 < 1) {
+          relayModule1.off();
+        }
+        else {
+          relayModule1.on();
+        }
       }
     }
   }
