@@ -168,7 +168,7 @@ void loop()
   // When the sensor moves back and forth, a certain voltage will be created by the voltage comparator inside of it. 
   // Returned values: from 0 (no strain) to 1023 (maximal strain).
   target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
-  if (target1Value > target1Threshold) {
+  if (player1HitTime == 0 && target1Value > target1Threshold) {
     player1HitTime = millis();
     if (targetsActive) {
       player1FalseStart = false;
@@ -180,7 +180,7 @@ void loop()
 
   // The exact same code for target 2
   target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
-  if (target2Value > target2Threshold) {
+  if (player2HitTime == 0 && target2Value > target2Threshold) {
     player2HitTime = millis();
     if (targetsActive) {
       player2FalseStart = false;
