@@ -105,6 +105,70 @@ void setup()
   lcdI2C.begin(LCD_COLUMNS, LCD_ROWS, LCD_ADDRESS, BACKLIGHT);
   ArcadeButton.init();
 
+  lcdI2C.clear();
+  lcdI2C.print("Startup...");
+  delay(800);
+
+  // Enter a diagnostics / test process if the button is pressed during startup
+  bool arcadeButtonVal = ArcadeButton.read();
+  if (arcadeButtonVal == HIGH) {
+    lcdI2C.clear();
+    lcdI2C.print("TEST MODE");
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Release button");
+    while (arcadeButtonVal == HIGH) {
+      delay(10);
+      arcadeButtonVal = ArcadeButton.read();
+    }
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Relay 1 ON      ");
+    relayModule1.on();
+    delay(2000);
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Relay 2 ON      ");
+    relayModule2.on();
+    delay(2000);
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Relay 1 OFF     ");
+    relayModule1.off();
+    delay(2000);
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Relay 2 OFF     ");
+    relayModule2.off();
+    delay(2000);
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Target 1 reading");
+    target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
+    unsigned long start = millis();
+    while (millis() < start + 5000) {
+      delay(50);
+      target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
+      char buf[21];
+      sprintf(buf,"%04d",target1Value);
+      lcdI2C.selectLine(2);
+      lcdI2C.print(buf);
+    }
+
+    lcdI2C.selectLine(2);
+    lcdI2C.print("Target 2 reading");
+    target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
+    unsigned long start = millis();
+    while (millis() < start + 5000) {
+      delay(50);
+      target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
+      char buf[21];
+      sprintf(buf,"%04d",target1Value);
+      lcdI2C.selectLine(2);
+      lcdI2C.print(buf);
+    }
+
+  } // End diagnostics
+
   // LCD 16x2 I2C - Test Code
   // The LCD Screen will display the text of your choice.
   lcdI2C.clear();                          // Clear LCD screen.
