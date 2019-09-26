@@ -141,28 +141,24 @@ void setup()
     relayModule2.off();
     delay(2000);
 
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Target 1 reading");
     target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
     unsigned long start = millis();
     while (millis() < start + 5000) {
       delay(50);
       target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
       char buf[21];
-      sprintf(buf,"%04d",target1Value);
+      sprintf(buf,"PV1: %04d       ",target1Value);
       lcdI2C.selectLine(2);
       lcdI2C.print(buf);
     }
 
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Target 2 reading");
     target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
     unsigned long start = millis();
     while (millis() < start + 5000) {
       delay(50);
       target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
       char buf[21];
-      sprintf(buf,"%04d",target1Value);
+      sprintf(buf,"PV2: %04d       ",target2Value);
       lcdI2C.selectLine(2);
       lcdI2C.print(buf);
     }
