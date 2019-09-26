@@ -153,7 +153,7 @@ void setup()
     }
 
     target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
-    unsigned long start = millis();
+    start = millis();
     while (millis() < start + 5000) {
       delay(50);
       target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
