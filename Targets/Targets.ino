@@ -95,13 +95,12 @@ bool player2FalseStart = false;
 // Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
 void setup()
 {
-  // Setup Serial which is useful for debugging
-  // Use the Serial Monitor to view printed messages
+  // Setup Serial for debugging
   Serial.begin(9600);
   while (!Serial) ; // wait for serial port to connect. Needed for native USB
   Serial.println("start");
 
-  // initialize the lcd
+  // Initialize the LCD and arcade button
   lcdI2C.begin(LCD_COLUMNS, LCD_ROWS, LCD_ADDRESS, BACKLIGHT);
   ArcadeButton.init();
 
@@ -109,61 +108,10 @@ void setup()
   lcdI2C.print("Startup...");
   delay(800);
 
-  // Enter a diagnostics / test process if the button is pressed during startup
-  bool arcadeButtonVal = ArcadeButton.read();
-  if (arcadeButtonVal == HIGH) {
-    lcdI2C.clear();
-    lcdI2C.print("TEST MODE");
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Release button");
-    while (arcadeButtonVal == HIGH) {
-      delay(10);
-      arcadeButtonVal = ArcadeButton.read();
-    }
-
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Relay 1 ON      ");
-    relayModule1.on();
-    delay(2000);
-
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Relay 2 ON      ");
-    relayModule2.on();
-    delay(2000);
-
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Relay 1 OFF     ");
-    relayModule1.off();
-    delay(2000);
-
-    lcdI2C.selectLine(2);
-    lcdI2C.print("Relay 2 OFF     ");
-    relayModule2.off();
-    delay(2000);
-
-    target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
-    unsigned long start = millis();
-    while (millis() < start + 5000) {
-      delay(50);
-      target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
-      char buf[21];
-      sprintf(buf,"PV1: %04d       ",target1Value);
-      lcdI2C.selectLine(2);
-      lcdI2C.print(buf);
-    }
-
-    target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
-    start = millis();
-    while (millis() < start + 5000) {
-      delay(50);
-      target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
-      char buf[21];
-      sprintf(buf,"PV2: %04d       ",target2Value);
-      lcdI2C.selectLine(2);
-      lcdI2C.print(buf);
-    }
-
-  } // End diagnostics
+  // Enter a diagnostics / test process if the button is pressed
+  if (IsButtonPressed()) {
+    RunDiagnostics();
+  }
 
   // LCD 16x2 I2C - Test Code
   // The LCD Screen will display the text of your choice.
@@ -179,7 +127,6 @@ void setup()
   randomSeed(analogRead(0));
 }
 
-// Main logic of your circuit. It defines the interaction between the components you selected. After setup, it runs over and over again, in an eternal loop.
 void loop()
 {
   // Concave Arcade Button - Red (without LED) - Test Code
@@ -187,43 +134,110 @@ void loop()
   //if button is pressed function will return HIGH (1). if not function will return LOW (0).
   //for debounce funtionality try also ArcadeButton.onPress(), .onRelease() and .onChange().
   //if debounce is not working properly try changing 'debounceDelay' variable in Button.h
-  bool arcadeButtonVal = ArcadeButton.read();
-
-  if (arcadeButtonVal == HIGH) {
-    // When the button is pressed
-    // Reset target "hit" statuses
-    isTarget1Hit = false;
-    isTarget2Hit = false;
-
-    // Turn off both relays/LEDs (flash them a few times before turning off?)
-    relayModule1.off();
-    relayModule2.off();
-
-    player1HitTime = 0;
-    player2HitTime = 0;
-
-    // Show "Get Ready!" on the LCD
-    lcdI2C.clear();
-    lcdI2C.print("Get Ready!");
-
-    // Set a timer for between 2~5 seconds from now (random value)
-    startTime = millis(); // Returns the number of milliseconds passed since the Arduino board began running the current program. This number will overflow (go back to zero), after approximately 50 days.
-    Serial.print("Button pressed at: "); 
-    Serial.println(String(startTime));
-    startTime += random(2000, 5000);
-    Serial.print("Random StartTime : "); 
-    Serial.println(String(startTime));
-    targetsActive = false;
-    gameOver = false;
+  if (IsButtonPressed()) {
+    Reset();
   }
 
-  // Temporary test code - turn on the relays when the start time is reached and the targets are not already active
+  // Turn on the relays when the start time is reached and the targets are not already active
   if (!targetsActive && millis() >= startTime) {
     targetsActive = true;
     relayModule1.on();
     relayModule2.on();
   }
 
+  GetTargetValues();
+  UpdateDisplay();
+  UpdateTargets();
+
+  // A short delay prevents erroneous button press readings and saves a little processing power
+  delay(25);
+}
+
+bool IsButtonPressed() {
+  bool arcadeButtonVal = ArcadeButton.read();
+  return (arcadeButtonVal == HIGH);
+}
+
+void RunDiagnostics() {
+  lcdI2C.clear();
+  lcdI2C.print("TEST MODE");
+  lcdI2C.selectLine(2);
+  lcdI2C.print("Release button");
+  while (IsButtonPressed()) {
+    delay(10);
+  }
+
+  lcdI2C.selectLine(2);
+  lcdI2C.print("Relay 1 ON      ");
+  relayModule1.on();
+  delay(2000);
+
+  lcdI2C.selectLine(2);
+  lcdI2C.print("Relay 2 ON      ");
+  relayModule2.on();
+  delay(2000);
+
+  lcdI2C.selectLine(2);
+  lcdI2C.print("Relay 1 OFF     ");
+  relayModule1.off();
+  delay(2000);
+
+  lcdI2C.selectLine(2);
+  lcdI2C.print("Relay 2 OFF     ");
+  relayModule2.off();
+  delay(2000);
+
+  target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
+  unsigned long start = millis();
+  while (millis() < start + 5000) {
+    delay(50);
+    target1Value = analogRead(PIEZOVIBRATION1_PIN_NEG);
+    char buf[21];
+    sprintf(buf,"PV1: %04d       ",target1Value);
+    lcdI2C.selectLine(2);
+    lcdI2C.print(buf);
+  }
+
+  target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
+  start = millis();
+  while (millis() < start + 5000) {
+    delay(50);
+    target2Value = analogRead(PIEZOVIBRATION2_PIN_NEG);
+    char buf[21];
+    sprintf(buf,"PV2: %04d       ",target2Value);
+    lcdI2C.selectLine(2);
+    lcdI2C.print(buf);
+  }
+} // End diagnostics
+
+void Reset() {
+  // Reset target "hit" statuses
+  isTarget1Hit = false;
+  isTarget2Hit = false;
+
+  // Turn off both relays/LEDs (flash them a few times before turning off?)
+  relayModule1.off();
+  relayModule2.off();
+
+  player1HitTime = 0;
+  player2HitTime = 0;
+
+  // Show "Get Ready!" on the LCD
+  lcdI2C.clear();
+  lcdI2C.print("Get Ready!");
+
+  // Set a timer for between 2~5 seconds from now (random value)
+  startTime = millis(); // Returns the number of milliseconds passed since the Arduino board began running the current program. This number will overflow (go back to zero), after approximately 50 days.
+  Serial.print("Button pressed at: "); 
+  Serial.println(String(startTime));
+  startTime += random(2000, 5000);
+  Serial.print("Random StartTime : "); 
+  Serial.println(String(startTime));
+  targetsActive = false;
+  gameOver = false;
+}
+
+void GetTargetValues() {
   // I don't have a Piezo Vibration Sensor but the documentation says that it is suitable for measurements of flexibility, vibration, impact and touch.
   // When the sensor moves back and forth, a certain voltage will be created by the voltage comparator inside of it. 
   // Returned values: from 0 (no strain) to 1023 (maximal strain).
@@ -249,7 +263,9 @@ void loop()
       player2FalseStart = true;
     }
   }
+}
 
+void UpdateDisplay() {
   // Update the display if a target has been hit
   if (!gameOver && (player1HitTime > 0 || player2HitTime > 0)) {
     if (player1HitTime > 0 && player2HitTime > 0) {
@@ -294,7 +310,9 @@ void loop()
       }
     }
   }
+}
 
+void UpdateTargets() {
   // Turn off the losing LED and blink the other - assumes setting a relay to the state it's already in has no effect
   if (gameOver) {
     if (player1FalseStart && player2FalseStart) {
@@ -327,8 +345,5 @@ void loop()
       }
     }
   }
-
-  // A short delay prevents erroneous button press readings and saves a little processing power
-  delay(50);
 }
 
